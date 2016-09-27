@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Anfahrtskarte</title>
+
+    <meta charset='utf-8' />
+    <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
+
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0/leaflet.css" />
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0/leaflet.js"></script>
+    <script src="//mapzen.com/tangram/tangram.min.js"></script>
+    <script src="//npmcdn.com/@turf/turf@3.5.1/turf.min.js"></script>
+    <script src="loadGeoJSON.js"></script>
+
+    <style>
+        body { margin:0; padding:0; }
+        #map { position:absolute; top:0; bottom:0; width:100%; }
+    </style>
+
+  </head>
+<body>
+
+  <div id='map'></div>
+
+  <script>
+    var config = {
+      "mapzen": {
+        "keys": {
+          "search": "search-kcNotTm",
+          "turnturn": "valhalla-eCswUHc",
+          "vector": "vector-tiles-wMaUBB1"
+        }
+      },
+      "map": {
+        "center": [49.507823, 6.744375],
+        "container": "map",
+        "scene": "https://raw.githubusercontent.com/tangrams/zinc-style-more-labels/gh-pages/zinc-style-more-labels.yaml",
+        "startzoom": 15
+      }
+    };
+
+    var map = L.map('map').setView(config.map.center, config.map.startzoom),
+        layer = Tangram.leafletLayer({
+          "scene": config.map.scene
+        }).addTo(map),
+        simpleline = L.geoJSON();
+
+    loadGeoJSON(map, simpleline, "simpleline.geojson",
+      function (map, layer, data) {
+
+        layer.addData(data).addTo(map);
+
+        var startPos = L.latLng(data.features[0].geometry.coordinates[0][1],
+                                data.features[0].geometry.coordinates[0][0]),
+            endPos = L.latLng(data.features[0].geometry.coordinates[1][1],
+                              data.features[0].geometry.coordinates[1][0]),
+            circle = L.circleMarker(startPos).addTo(map);
+      });
+
+  </script>
+
+</body>
+</html>
