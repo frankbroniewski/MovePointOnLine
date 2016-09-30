@@ -13,6 +13,7 @@
     <script src="//mapzen.com/tangram/tangram.min.js"></script>
     <script src="//npmcdn.com/@turf/turf@3.5.1/turf.min.js"></script>
     <script src="loadGeoJSON.js"></script>
+    <script src="PointOnLineIterator.js"></script>
 
     <style>
         body { margin:0; padding:0; }
@@ -41,22 +42,58 @@
       }
     };
 
-    var map = L.map('map').setView(config.map.center, config.map.startzoom),
+    // turf.along(line, distance, 'kilometers');
+
+    function animate( map, line, circle, duration ) {
+
+      // console.log( line, duration );
+
+      var iterator = new PointOnLineIterator( line, duration );
+
+      function animatePoint() {
+
+        var point;
+
+        if ( iterator.hasNext() ) {
+
+          point = iterator.next();
+
+          if ( point ) {
+            circle.setLatLng([ point.geometry.coordinates[1],
+                               point.geometry.coordinates[0] ]);
+          } else {
+            console.error('no point retrieved');
+            cancelAnimationFrame( animatePoint );
+          }
+
+          requestAnimationFrame( animatePoint );
+
+        } else {
+          cancelAnimationFrame( animatePoint );
+        }
+
+      }
+
+      requestAnimationFrame( animatePoint );
+
+    }
+
+    var map = L.map( 'map' ).setView( config.map.center, config.map.startzoom ),
         layer = Tangram.leafletLayer({
           "scene": config.map.scene
-        }).addTo(map),
+        }).addTo( map ),
         simpleline = L.geoJSON();
 
-    loadGeoJSON(map, simpleline, "simpleline.geojson",
-      function (map, layer, data) {
+    loadGeoJSON(map, simpleline, "complexline.geojson",
+      function( map, layer, data ) {
 
-        layer.addData(data).addTo(map);
+        layer.addData( data ).addTo (map );
 
-        var startPos = L.latLng(data.features[0].geometry.coordinates[0][1],
-                                data.features[0].geometry.coordinates[0][0]),
-            endPos = L.latLng(data.features[0].geometry.coordinates[1][1],
-                              data.features[0].geometry.coordinates[1][0]),
-            circle = L.circleMarker(startPos).addTo(map);
+        var startPos = L.latLng( data.features[0].geometry.coordinates[0][1],
+                                 data.features[0].geometry.coordinates[0][0] ),
+            circle = L.circleMarker( startPos ).addTo( map );
+
+        animate( map, data, circle, 20000 );
       });
 
   </script>
