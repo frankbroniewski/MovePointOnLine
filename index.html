@@ -91,9 +91,11 @@
 
         var startPos = L.latLng( data.features[0].geometry.coordinates[0][1],
                                  data.features[0].geometry.coordinates[0][0] ),
-            circle = L.circleMarker( startPos ).addTo( map );
+            circle = L.circleMarker( startPos ).addTo( map ),
+            circle2 = L.circleMarker( startPos ).addTo( map );
 
         animate( map, data, circle, 20000 );
+        animate( map, data, circle2, 10000 );
       });
 
   </script>
