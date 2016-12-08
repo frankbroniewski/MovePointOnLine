@@ -9,8 +9,6 @@ function PointOnLineIterator( way, travelTime ) {
   this.fps = 1000 / 60;
   this.stepLength = this.wayDistance / this.travelTime * this.fps;
 
-  console.log( this );
-
 }
 
 

@@ -2,30 +2,130 @@
 <html>
 <head>
 
-    <title>Anfahrtskarte</title>
+    <title>Hennen Rennen - Ein Rennen rund um den Stausee</title>
 
     <meta charset='utf-8' />
     <meta name='viewport' content='initial-scale=1,maximum-scale=1,user-scalable=no' />
 
     <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0/leaflet.css" />
+    <link href="//fonts.googleapis.com/css?family=Rock+Salt" rel="stylesheet">
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/leaflet/1.0.0/leaflet.js"></script>
     <script src="//mapzen.com/tangram/tangram.min.js"></script>
     <script src="//npmcdn.com/@turf/turf@3.5.1/turf.min.js"></script>
+    <script src="//use.fontawesome.com/7113326d4a.js"></script>
     <script src="loadGeoJSON.js"></script>
     <script src="PointOnLineIterator.js"></script>
+    <script src="animate.js"></script>
 
     <style>
-        body { margin:0; padding:0; }
+
+        body { margin:0; padding:0; font-family: 'Rock Salt', cursive; color: #4169e1; }
+
         #map { position:absolute; top:0; bottom:0; width:100%; }
+
+        .top {
+          z-index: 5000;
+        }
+
+        .fa {
+          color: #4169e1;
+        }
+
+        #chickens {
+          position: absolute;
+          left: 10px;
+          bottom: 10px;
+          width: 30%;
+          font-size: 1.2rem;
+          display: none;
+        }
+
+        #chickens img {
+          vertical-align: middle;
+          margin-right: 1rem;
+        }
+
+        .button {
+          display: block;
+          position: absolute;
+          background: none;
+          border: none;
+        }
+
+        #chickenInfoButton {
+          font-size: 2rem;
+          left: 10px;
+          bottom: 10px;
+          width: auto;
+          cursor: help;
+        }
+
+        #playButton {
+          font-size: 10rem;
+          width: 20%;
+          cursor: pointer;
+          margin: auto;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+        }
+
+        .small {
+          font-size: 0.8rem;
+        }
+
     </style>
 
   </head>
 <body>
 
   <div id='map'></div>
+  <div id="chickens" class="top">
+    <p><strong>Unsere Teilnehmer am Start</strong></p>
+    <p><img src="huhn-gruen.png" alt="Eiliger Erich"> Eiliger Erich</p>
+    <p><img src="huhn-rot.png" alt="Eiliger Erich"> Flinker Freddie</p>
+    <p><img src="huhn-blau.png" alt="Hurtige Helga"> Hurtige Helga</p>
+    <p class="small">Klicken zum Schließen</p>
+  </div>
+  <button id="chickenInfoButton" class="top button"><i class="fa fa-info-circle" aria-hidden="true"></i></button>
+  <button id="playButton" class="top button"><i class="fa fa-play-circle-o" aria-hidden="true"></i></button>
 
   <script>
+
+    function speed() {
+
+    }
+
+    // toggle chicken info div and button visibility
+    function chickenInfo() {
+
+      if ( chickenInfoButton.style.display === 'block' ) {
+        chickenInfoButton.style.display = 'none';
+        chickenInfoDiv.style.display = 'block';
+        return;
+      }
+
+      chickenInfoButton.style.display = 'block';
+      chickenInfoDiv.style.display = 'none';
+
+    }
+
+    function play( evt ) {
+      evt.target.removeEventListener(evt.type, arguments.callee);
+      playButton.style.display = 'none';
+
+      var len = chickens.length,
+          chicken;
+
+      for ( var i = 0; i < len; i++ ) {
+        chicken = chickens[ i ];
+        animate( chicken[ 0 ], chicken[ 1 ], chicken[ 2 ], chicken[ 3 ] );
+      }
+
+    }
+
     var config = {
       "mapzen": {
         "keys": {
@@ -35,67 +135,111 @@
         }
       },
       "map": {
-        "center": [49.507823, 6.744375],
+        "center": [49.519, 6.732],
         "container": "map",
         "scene": "https://raw.githubusercontent.com/tangrams/zinc-style-more-labels/gh-pages/zinc-style-more-labels.yaml",
-        "startzoom": 15
+        "startzoom": 16
       }
     };
 
-    // turf.along(line, distance, 'kilometers');
-
-    function animate( map, line, circle, duration ) {
-
-      // console.log( line, duration );
-
-      var iterator = new PointOnLineIterator( line, duration );
-
-      function animatePoint() {
-
-        var point;
-
-        if ( iterator.hasNext() ) {
-
-          point = iterator.next();
-
-          if ( point ) {
-            circle.setLatLng([ point.geometry.coordinates[1],
-                               point.geometry.coordinates[0] ]);
-          } else {
-            console.error('no point retrieved');
-            cancelAnimationFrame( animatePoint );
-          }
-
-          requestAnimationFrame( animatePoint );
-
-        } else {
-          cancelAnimationFrame( animatePoint );
-        }
-
-      }
-
-      requestAnimationFrame( animatePoint );
-
-    }
+    var chickenInfoButton = document.getElementById( 'chickenInfoButton' ),
+        chickenInfoDiv = document.getElementById( 'chickens' ),
+        playButton = document.getElementById( 'playButton' );
 
     var map = L.map( 'map' ).setView( config.map.center, config.map.startzoom ),
         layer = Tangram.leafletLayer({
           "scene": config.map.scene
         }).addTo( map ),
-        simpleline = L.geoJSON();
+        erichIcon = L.icon({
+          'iconUrl': 'huhn-gruen.png',
+          'iconSize': [ 40, 40 ],
+          'iconAnchor': [ 22, 22 ]
+        }),
+        freddieIcon = L.icon({
+          'iconUrl': 'huhn-rot.png',
+          'iconSize': [ 40, 40 ],
+          'iconAnchor': [ 28, 28 ]
+        }),
+        helgaIcon = L.icon({
+          'iconUrl': 'huhn-blau.png',
+          'iconSize': [ 40, 40 ],
+          'iconAnchor': [ 18, 18 ]
+        }),
+        startIcon = L.icon({
+          'iconUrl': 'start.png',
+          'iconSize': [ 32, 32 ],
+          'iconAnchor': [ 16, 16 ]
+        }),
+        zielIcon = L.icon({
+          'iconUrl': 'finish.png',
+          'iconSize': [ 32, 32 ],
+          'iconAnchor': [ 16, 16 ]
+        }),
+        leftIcon = L.icon({
+          'iconUrl': 'direction_left.png',
+          'iconSize': [ 40, 40 ],
+          'iconAnchor': [ 30, 30 ]
+        }),
+        rightIcon = L.icon({
+          'iconUrl': 'direction_right.png',
+          'iconSize': [ 40, 40 ],
+          'iconAnchor': [ 30, 30 ]
+        }),
+        drumsIcon = L.icon({
+          'iconUrl': 'drum.png',
+          'iconSize': [ 32, 32 ],
+          'iconAnchor': [ 28, 28 ]
+        }),
+        foodIcon = L.icon({
+          'iconUrl': 'wurmteller.png',
+          'iconSize': [ 37, 44 ],
+          'iconAnchor': [ 33, 40 ]
+        }),
+        simpleline = L.geoJSON(),
+        poi = L.geoJSON( null, { 'pointToLayer': function ( feature, latlng ) {
+            switch ( feature.properties.type ) {
+              case 'start': return L.marker( latlng, { 'icon': startIcon } );
+              case 'ziel': return L.marker( latlng, { 'icon': zielIcon } );
+              case 'direction_left': return L.marker( latlng, { 'icon': leftIcon } );
+              case 'direction_right': return L.marker( latlng, { 'icon': rightIcon } );
+              case 'drums': return L.marker( latlng, { 'icon': drumsIcon } );
+              case 'wurmteller': return L.marker( latlng, { 'icon': foodIcon } );
+            }
+          }
+        }),
+        speedValues = [ 20000, 18000, 16000, 14000, 12000, 10000 ],
+        chickens = [];
 
-    loadGeoJSON(map, simpleline, "complexline.geojson",
+    // load POI
+    loadGeoJSON( map, poi, "poi.geojson", function ( map, layer, data ) {
+      layer.addData( data ).addTo( map );
+    });
+
+    // load route
+    loadGeoJSON( map, simpleline, "stausee.geojson",
       function( map, layer, data ) {
 
         layer.addData( data ).addTo (map );
 
         var startPos = L.latLng( data.features[0].geometry.coordinates[0][1],
                                  data.features[0].geometry.coordinates[0][0] ),
-            circle = L.circleMarker( startPos ).addTo( map ),
-            circle2 = L.circleMarker( startPos ).addTo( map );
+            eiligerErich = L.marker( startPos, { 'icon': erichIcon } ).addTo( map ),
+            flinkerFreddie = L.marker( startPos, { 'icon': freddieIcon } ).addTo( map ),
+            hurtigeHelga = L.marker( startPos, { 'icon': helgaIcon } ).addTo( map );
 
-        animate( map, data, circle, 20000 );
-        animate( map, data, circle2, 10000 );
+        chickens.push(
+          [ map, data, eiligerErich, speedValues[ Math.floor( Math.random() * speedValues.length ) ] ],
+          [ map, data, flinkerFreddie, speedValues[ Math.floor( Math.random() * speedValues.length ) ] ],
+          [ map, data, hurtigeHelga, speedValues[ Math.floor( Math.random() * speedValues.length ) ] ]
+        );
+
+      });
+
+      window.addEventListener( 'load', function() {
+        chickenInfoButton.style.display = 'block';
+        chickenInfoButton.addEventListener( 'click', chickenInfo );
+        chickenInfoDiv.addEventListener( 'click', chickenInfo );
+        playButton.addEventListener( 'click', play );
       });
 
   </script>
